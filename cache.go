@@ -49,7 +49,7 @@ var (
 )
 
 // Default is a multi-layer cache combining fastest to slowest caches.
-// It implements Cache interface.
+// It implements Cache and GCable interface.
 var Default = Combined([]Cache{Appcache, Memcache, Datastore})
 
 var (
@@ -87,6 +87,11 @@ func Delete(c appengine.Context, key string) error {
 // Flush is a wrapper to Default cache Flush.
 func Flush(c appengine.Context) error {
 	return Default.Flush(c)
+}
+
+// GC is a wrapper to Default cache GC.
+func GC(c appengine.Context) error {
+	return Default.GC(c)
 }
 
 // Helpers to set/get from value to Item. Used in all cache layers.

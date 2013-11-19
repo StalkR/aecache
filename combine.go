@@ -75,3 +75,17 @@ func (d Combined) Flush(c appengine.Context) error {
 	}
 	return nil
 }
+
+// GC deletes expired items from the cache layers that support it.
+func (d Combined) GC(c appengine.Context) error {
+	for _, e := range d {
+		g, ok := e.(GCable)
+		if !ok {
+			continue
+		}
+		if err := g.GC(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
