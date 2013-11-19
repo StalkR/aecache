@@ -41,14 +41,11 @@ func (d Combined) GetItem(c appengine.Context, key string) (Item, error) {
 	}
 	item, err := d[0].GetItem(c, key)
 	if err == nil {
-		c.Infof("cache: combined %T hit", d[0])
 		return item, nil
 	}
 	if err != ErrCacheMiss {
-		c.Errorf("cache: combined %T get: %v", d[0], err)
 		return Item{}, err
 	}
-	c.Infof("cache: combined %T miss", d[0])
 	item, err = Combined(d[1:]).GetItem(c, key)
 	if err == nil {
 		go d[0].SetItem(c, key, item)
