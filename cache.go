@@ -41,17 +41,11 @@ type GCable interface {
 	GC(c appengine.Context) error
 }
 
-// Default layers of cache. They implement Cache interface.
-var (
-	Appcache  = NewAppcacheLayer()
-	Memcache  = MemcacheLayer{}
-	Datastore = DatastoreLayer{}
-)
-
 // Default is a multi-layer cache combining fastest to slowest caches.
 // It implements Cache and GCable interface.
-var Default = Combined([]Cache{Appcache, Memcache, Datastore})
+var Default = Combined([]Cache{NewAppcache(), Memcache{}, Datastore{}})
 
+// Errors returned by this package.
 var (
 	// ErrCacheMiss is when key is not found.
 	ErrCacheMiss = errors.New("cache: miss")

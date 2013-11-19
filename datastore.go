@@ -7,22 +7,22 @@ import (
 	"appengine/datastore"
 )
 
-// A DatastoreLayer represents a cache on top of AppEngine's datastore.
+// A Datastore represents a cache on top of AppEngine's datastore.
 // It implements Cache and GCable interfaces.
-type DatastoreLayer struct{}
+type Datastore struct{}
 
 // Set sets a key to value with a given expiration.
-func (d DatastoreLayer) Set(c appengine.Context, key string, value []byte, expiration time.Duration) error {
+func (d Datastore) Set(c appengine.Context, key string, value []byte, expiration time.Duration) error {
 	return set(d, c, key, value, expiration)
 }
 
 // Get gets a value given a key.
-func (d DatastoreLayer) Get(c appengine.Context, key string) ([]byte, error) {
+func (d Datastore) Get(c appengine.Context, key string) ([]byte, error) {
 	return get(d, c, key)
 }
 
 // SetItem sets a key to item.
-func (d DatastoreLayer) SetItem(c appengine.Context, key string, item Item) error {
+func (d Datastore) SetItem(c appengine.Context, key string, item Item) error {
 	// Datastore can save up to 1MB of []byte in an entity.
 	if len(item.Value) >= 1<<20 {
 		return ErrTooBig
@@ -33,7 +33,7 @@ func (d DatastoreLayer) SetItem(c appengine.Context, key string, item Item) erro
 }
 
 // GetItem gets an item given a key.
-func (d DatastoreLayer) GetItem(c appengine.Context, key string) (Item, error) {
+func (d Datastore) GetItem(c appengine.Context, key string) (Item, error) {
 	k := datastore.NewKey(c, "Item", "Cache:"+key, 0, nil)
 	item := Item{}
 	err := datastore.Get(c, k, &item)
@@ -50,13 +50,13 @@ func (d DatastoreLayer) GetItem(c appengine.Context, key string) (Item, error) {
 }
 
 // Delete deletes an item from the cache by key.
-func (d DatastoreLayer) Delete(c appengine.Context, key string) error {
+func (d Datastore) Delete(c appengine.Context, key string) error {
 	k := datastore.NewKey(c, "Item", "Cache:"+key, 0, nil)
 	return datastore.Delete(c, k)
 }
 
 // Flush removes all cache items from the datastore.
-func (d DatastoreLayer) Flush(c appengine.Context) error {
+func (d Datastore) Flush(c appengine.Context) error {
 	keys, err := datastore.NewQuery("Item").KeysOnly().GetAll(c, nil)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (d DatastoreLayer) Flush(c appengine.Context) error {
 }
 
 // GC deletes expired cache items from the datastore.
-func (d DatastoreLayer) GC(c appengine.Context) error {
+func (d Datastore) GC(c appengine.Context) error {
 	q := datastore.NewQuery("Item").Filter("Expires >", time.Time{})
 	keys, err := q.Filter("Expires <", time.Now()).KeysOnly().GetAll(c, nil)
 	if err != nil {
