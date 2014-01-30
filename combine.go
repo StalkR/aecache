@@ -16,7 +16,7 @@ func (d Combined) Set(c appengine.Context, key string, value []byte, expiration 
 	return set(d, c, key, value, expiration)
 }
 
-// GetItem gets a value given a key by looking through the cache layers.
+// Get gets a value given a key by looking through the cache layers.
 // When found, a layer refreshes its parent cache.
 func (d Combined) Get(c appengine.Context, key string) ([]byte, error) {
 	return get(d, c, key)
