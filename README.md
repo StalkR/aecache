@@ -6,7 +6,7 @@
 
 Bugs, comments, questions: create a [new issue][5] or email [aecache@stalkr.net][6].
 
-[1]: https://api.travis-ci.org/StalkR/aecache.png
+[1]: https://api.travis-ci.org/StalkR/aecache.png?branch=master
 [2]: https://travis-ci.org/StalkR/aecache
 [3]: https://godoc.org/github.com/StalkR/aecache?status.png
 [4]: https://godoc.org/github.com/StalkR/aecache
