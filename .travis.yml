@@ -1,3 +1,4 @@
+sudo: false
 language: go
 
 before_install:
@@ -12,4 +13,4 @@ install:
 
 script:
   - $HOME/go_appengine/goapp test -v ./...
-  - go vet -v ./...
+  - go vet ./...
