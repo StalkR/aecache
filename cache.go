@@ -28,17 +28,17 @@ type Item struct {
 
 // Cache represents the ability to store, get values and also delete.
 type Cache interface {
-	Set(c context.Context, key string, value []byte, expiration time.Duration) error
-	Get(c context.Context, key string) ([]byte, error)
-	SetItem(c context.Context, key string, item Item) error
-	GetItem(c context.Context, key string) (Item, error)
-	Delete(c context.Context, key string) error
-	Flush(c context.Context) error
+	Set(ctx context.Context, key string, value []byte, expiration time.Duration) error
+	Get(ctx context.Context, key string) ([]byte, error)
+	SetItem(ctx context.Context, key string, item Item) error
+	GetItem(ctx context.Context, key string) (Item, error)
+	Delete(ctx context.Context, key string) error
+	Flush(ctx context.Context) error
 }
 
 // GCable represents the ability to collect and delete expired items.
 type GCable interface {
-	GC(c context.Context) error
+	GC(ctx context.Context) error
 }
 
 // Default is a multi-layer cache combining fastest to slowest caches.
@@ -54,50 +54,50 @@ var (
 )
 
 // Set is a wrapper to Default cache Set.
-func Set(c context.Context, key string, value []byte, expiration time.Duration) error {
-	return Default.Set(c, key, value, expiration)
+func Set(ctx context.Context, key string, value []byte, expiration time.Duration) error {
+	return Default.Set(ctx, key, value, expiration)
 }
 
 // Get is a wrapper to Default cache Get.
-func Get(c context.Context, key string) ([]byte, error) {
-	return Default.Get(c, key)
+func Get(ctx context.Context, key string) ([]byte, error) {
+	return Default.Get(ctx, key)
 }
 
 // SetItem is a wrapper to Default cache SetItem.
-func SetItem(c context.Context, key string, item Item) error {
-	return Default.SetItem(c, key, item)
+func SetItem(ctx context.Context, key string, item Item) error {
+	return Default.SetItem(ctx, key, item)
 }
 
 // GetItem is a wrapper to Default cache GetItem.
-func GetItem(c context.Context, key string) (Item, error) {
-	return Default.GetItem(c, key)
+func GetItem(ctx context.Context, key string) (Item, error) {
+	return Default.GetItem(ctx, key)
 }
 
 // Delete is a wrapper to Default cache Delete.
-func Delete(c context.Context, key string) error {
-	return Default.Delete(c, key)
+func Delete(ctx context.Context, key string) error {
+	return Default.Delete(ctx, key)
 }
 
 // Flush is a wrapper to Default cache Flush.
-func Flush(c context.Context) error {
-	return Default.Flush(c)
+func Flush(ctx context.Context) error {
+	return Default.Flush(ctx)
 }
 
 // GC is a wrapper to Default cache GC.
-func GC(c context.Context) error {
-	return Default.GC(c)
+func GC(ctx context.Context) error {
+	return Default.GC(ctx)
 }
 
 // Helpers to set/get from value to Item. Used in all cache layers.
-func set(e Cache, c context.Context, key string, value []byte, expiration time.Duration) error {
+func set(ctx context.Context, e Cache, key string, value []byte, expiration time.Duration) error {
 	item := Item{Value: value}
 	if expiration > 0 {
 		item.Expires = time.Now().Add(expiration)
 	}
-	return e.SetItem(c, key, item)
+	return e.SetItem(ctx, key, item)
 }
-func get(e Cache, c context.Context, key string) ([]byte, error) {
-	item, err := e.GetItem(c, key)
+func get(ctx context.Context, e Cache, key string) ([]byte, error) {
+	item, err := e.GetItem(ctx, key)
 	if err != nil {
 		return nil, err
 	}
