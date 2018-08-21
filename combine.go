@@ -3,7 +3,7 @@ package aecache
 import (
 	"time"
 
-	"appengine"
+	"google.golang.org/appengine"
 )
 
 // Combined represents the combination of multiple caches.

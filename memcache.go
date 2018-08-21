@@ -3,8 +3,8 @@ package aecache
 import (
 	"time"
 
-	"appengine"
-	"appengine/memcache"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/memcache"
 )
 
 // A Memcache represents a cache on top of AppEngine's memcache.

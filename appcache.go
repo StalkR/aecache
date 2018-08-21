@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"appengine"
+	"google.golang.org/appengine"
 )
 
 // An Appcache represents a cache in the app process memory.

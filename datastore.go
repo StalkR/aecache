@@ -3,8 +3,8 @@ package aecache
 import (
 	"time"
 
-	"appengine"
-	"appengine/datastore"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
 )
 
 // A Datastore represents a cache on top of AppEngine's datastore.

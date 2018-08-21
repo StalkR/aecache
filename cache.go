@@ -16,7 +16,7 @@ import (
 	"errors"
 	"time"
 
-	"appengine"
+	"google.golang.org/appengine"
 )
 
 // An Item represents a value to cache with its expiration time.
