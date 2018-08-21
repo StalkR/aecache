@@ -3,7 +3,7 @@ package aecache
 import (
 	"time"
 
-	"google.golang.org/appengine"
+	"golang.org/x/net/context"
 	"google.golang.org/appengine/datastore"
 )
 
@@ -12,17 +12,17 @@ import (
 type Datastore struct{}
 
 // Set sets a key to value with a given expiration.
-func (d Datastore) Set(c appengine.Context, key string, value []byte, expiration time.Duration) error {
+func (d Datastore) Set(c context.Context, key string, value []byte, expiration time.Duration) error {
 	return set(d, c, key, value, expiration)
 }
 
 // Get gets a value given a key.
-func (d Datastore) Get(c appengine.Context, key string) ([]byte, error) {
+func (d Datastore) Get(c context.Context, key string) ([]byte, error) {
 	return get(d, c, key)
 }
 
 // SetItem sets a key to item.
-func (d Datastore) SetItem(c appengine.Context, key string, item Item) error {
+func (d Datastore) SetItem(c context.Context, key string, item Item) error {
 	// Datastore can save up to 1MB of []byte in an entity.
 	if len(item.Value) >= 1<<20 {
 		return ErrTooBig
@@ -33,7 +33,7 @@ func (d Datastore) SetItem(c appengine.Context, key string, item Item) error {
 }
 
 // GetItem gets an item given a key.
-func (d Datastore) GetItem(c appengine.Context, key string) (Item, error) {
+func (d Datastore) GetItem(c context.Context, key string) (Item, error) {
 	k := datastore.NewKey(c, "Item", "Cache:"+key, 0, nil)
 	item := Item{}
 	err := datastore.Get(c, k, &item)
@@ -50,13 +50,13 @@ func (d Datastore) GetItem(c appengine.Context, key string) (Item, error) {
 }
 
 // Delete deletes an item from the cache by key.
-func (d Datastore) Delete(c appengine.Context, key string) error {
+func (d Datastore) Delete(c context.Context, key string) error {
 	k := datastore.NewKey(c, "Item", "Cache:"+key, 0, nil)
 	return datastore.Delete(c, k)
 }
 
 // Flush removes all cache items from the datastore.
-func (d Datastore) Flush(c appengine.Context) error {
+func (d Datastore) Flush(c context.Context) error {
 	keys, err := datastore.NewQuery("Item").KeysOnly().GetAll(c, nil)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (d Datastore) Flush(c appengine.Context) error {
 }
 
 // GC deletes expired cache items from the datastore.
-func (d Datastore) GC(c appengine.Context) error {
+func (d Datastore) GC(c context.Context) error {
 	q := datastore.NewQuery("Item").Filter("Expires >", time.Time{})
 	keys, err := q.Filter("Expires <", time.Now()).KeysOnly().GetAll(c, nil)
 	if err != nil {

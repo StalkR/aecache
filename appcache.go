@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/appengine"
+	"golang.org/x/net/context"
 )
 
 // An Appcache represents a cache in the app process memory.
@@ -20,17 +20,17 @@ func NewAppcache() *Appcache {
 }
 
 // Set sets a key to value with a given expiration.
-func (a *Appcache) Set(c appengine.Context, key string, value []byte, expiration time.Duration) error {
+func (a *Appcache) Set(c context.Context, key string, value []byte, expiration time.Duration) error {
 	return set(a, c, key, value, expiration)
 }
 
 // Get gets a value given a key.
-func (a *Appcache) Get(c appengine.Context, key string) ([]byte, error) {
+func (a *Appcache) Get(c context.Context, key string) ([]byte, error) {
 	return get(a, c, key)
 }
 
 // SetItem sets a key to item.
-func (a *Appcache) SetItem(c appengine.Context, key string, item Item) error {
+func (a *Appcache) SetItem(c context.Context, key string, item Item) error {
 	a.Lock()
 	a.items[key] = item
 	a.Unlock()
@@ -39,7 +39,7 @@ func (a *Appcache) SetItem(c appengine.Context, key string, item Item) error {
 }
 
 // GetItem gets an item given a key.
-func (a *Appcache) GetItem(c appengine.Context, key string) (Item, error) {
+func (a *Appcache) GetItem(c context.Context, key string) (Item, error) {
 	a.Lock()
 	defer a.Unlock()
 	item, ok := a.items[key]
@@ -54,7 +54,7 @@ func (a *Appcache) GetItem(c appengine.Context, key string) (Item, error) {
 }
 
 // Delete deletes an item from the cache by key.
-func (a *Appcache) Delete(c appengine.Context, key string) error {
+func (a *Appcache) Delete(c context.Context, key string) error {
 	a.Lock()
 	defer a.Unlock()
 	delete(a.items, key)
@@ -62,7 +62,7 @@ func (a *Appcache) Delete(c appengine.Context, key string) error {
 }
 
 // Flush removes all items from the cache.
-func (a *Appcache) Flush(c appengine.Context) error {
+func (a *Appcache) Flush(c context.Context) error {
 	a.Lock()
 	defer a.Unlock()
 	a.items = make(map[string]Item)
@@ -70,7 +70,7 @@ func (a *Appcache) Flush(c appengine.Context) error {
 }
 
 // GC deletes expired items from the cache.
-func (a *Appcache) GC(c appengine.Context) {
+func (a *Appcache) GC(c context.Context) {
 	a.Lock()
 	defer a.Unlock()
 	for key, item := range a.items {

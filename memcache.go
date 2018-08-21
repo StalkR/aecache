@@ -3,7 +3,7 @@ package aecache
 import (
 	"time"
 
-	"google.golang.org/appengine"
+	"golang.org/x/net/context"
 	"google.golang.org/appengine/memcache"
 )
 
@@ -12,17 +12,17 @@ import (
 type Memcache struct{}
 
 // Set sets a key to value with a given expiration.
-func (m Memcache) Set(c appengine.Context, key string, value []byte, expiration time.Duration) error {
+func (m Memcache) Set(c context.Context, key string, value []byte, expiration time.Duration) error {
 	return set(m, c, key, value, expiration)
 }
 
 // Get gets a value given a key.
-func (m Memcache) Get(c appengine.Context, key string) ([]byte, error) {
+func (m Memcache) Get(c context.Context, key string) ([]byte, error) {
 	return get(m, c, key)
 }
 
 // SetItem sets a key to item.
-func (m Memcache) SetItem(c appengine.Context, key string, item Item) error {
+func (m Memcache) SetItem(c context.Context, key string, item Item) error {
 	var expiration time.Duration
 	if !item.Expires.IsZero() {
 		if item.Expires.Before(time.Now()) {
@@ -38,7 +38,7 @@ func (m Memcache) SetItem(c appengine.Context, key string, item Item) error {
 }
 
 // GetItem gets an item given a key.
-func (m Memcache) GetItem(c appengine.Context, key string) (Item, error) {
+func (m Memcache) GetItem(c context.Context, key string) (Item, error) {
 	var item Item
 	_, err := memcache.Gob.Get(c, key, &item)
 	if err == memcache.ErrCacheMiss {
@@ -54,11 +54,11 @@ func (m Memcache) GetItem(c appengine.Context, key string) (Item, error) {
 }
 
 // Delete deletes an item from the cache by key.
-func (m Memcache) Delete(c appengine.Context, key string) error {
+func (m Memcache) Delete(c context.Context, key string) error {
 	return memcache.Delete(c, key)
 }
 
 // Flush removes all items from memcache, even items not added by this package.
-func (m Memcache) Flush(c appengine.Context) error {
+func (m Memcache) Flush(c context.Context) error {
 	return memcache.Flush(c)
 }

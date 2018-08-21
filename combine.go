@@ -3,7 +3,7 @@ package aecache
 import (
 	"time"
 
-	"google.golang.org/appengine"
+	"golang.org/x/net/context"
 )
 
 // Combined represents the combination of multiple caches.
@@ -12,19 +12,19 @@ type Combined []Cache
 
 // Set sets a key to value with a given expiration, one layer after another.
 // If the error is not important, consider using a goroutine for it.
-func (d Combined) Set(c appengine.Context, key string, value []byte, expiration time.Duration) error {
+func (d Combined) Set(c context.Context, key string, value []byte, expiration time.Duration) error {
 	return set(d, c, key, value, expiration)
 }
 
 // Get gets a value given a key by looking through the cache layers.
 // When found, a layer refreshes its parent cache.
-func (d Combined) Get(c appengine.Context, key string) ([]byte, error) {
+func (d Combined) Get(c context.Context, key string) ([]byte, error) {
 	return get(d, c, key)
 }
 
 // SetItem sets a key to item, one layer after another.
 // If the error is not used, best use a goroutine for it.
-func (d Combined) SetItem(c appengine.Context, key string, item Item) error {
+func (d Combined) SetItem(c context.Context, key string, item Item) error {
 	for _, e := range d {
 		if err := e.SetItem(c, key, item); err != nil {
 			return err
@@ -35,7 +35,7 @@ func (d Combined) SetItem(c appengine.Context, key string, item Item) error {
 
 // GetItem gets an item given a key by looking recursively at the layers.
 // When found, a layer refreshes its parent cache.
-func (d Combined) GetItem(c appengine.Context, key string) (Item, error) {
+func (d Combined) GetItem(c context.Context, key string) (Item, error) {
 	if len(d) == 0 {
 		return Item{}, ErrCacheMiss
 	}
@@ -54,7 +54,7 @@ func (d Combined) GetItem(c appengine.Context, key string) (Item, error) {
 }
 
 // Delete deletes an item from the cache by key.
-func (d Combined) Delete(c appengine.Context, key string) error {
+func (d Combined) Delete(c context.Context, key string) error {
 	for _, e := range d {
 		if err := e.Delete(c, key); err != nil {
 			return err
@@ -64,7 +64,7 @@ func (d Combined) Delete(c appengine.Context, key string) error {
 }
 
 // Flush removes all items from the cache.
-func (d Combined) Flush(c appengine.Context) error {
+func (d Combined) Flush(c context.Context) error {
 	for _, e := range d {
 		if err := e.Flush(c); err != nil {
 			return err
@@ -74,7 +74,7 @@ func (d Combined) Flush(c appengine.Context) error {
 }
 
 // GC deletes expired items from the cache layers that support it.
-func (d Combined) GC(c appengine.Context) error {
+func (d Combined) GC(c context.Context) error {
 	for _, e := range d {
 		g, ok := e.(GCable)
 		if !ok {
