@@ -13,10 +13,9 @@ like json or gob.
 package aecache
 
 import (
+	"context"
 	"errors"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // An Item represents a value to cache with its expiration time.

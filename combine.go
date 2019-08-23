@@ -1,9 +1,8 @@
 package aecache
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // Combined represents the combination of multiple caches.

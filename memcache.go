@@ -1,9 +1,9 @@
 package aecache
 
 import (
+	"context"
 	"time"
 
-	"golang.org/x/net/context"
 	"google.golang.org/appengine/memcache"
 )
 

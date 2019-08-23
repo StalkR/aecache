@@ -1,10 +1,9 @@
 package aecache
 
 import (
+	"context"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // An Appcache represents a cache in the app process memory.
