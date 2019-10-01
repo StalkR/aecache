@@ -71,5 +71,16 @@ func (d Datastore) GC(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return datastore.DeleteMulti(ctx, keys)
+	for len(keys) > 0 {
+		// "API error 1 (datastore_v3: BAD_REQUEST): cannot write more than 500 entities in a single call"
+		n := 500
+		if n > len(keys) {
+			n = len(keys)
+		}
+		if err := datastore.DeleteMulti(ctx, keys[:n]); err != nil {
+			return err
+		}
+		keys = keys[n:]
+	}
+	return nil
 }
