@@ -2,87 +2,104 @@ package aecache
 
 import (
 	"context"
+	"sync"
 	"time"
 
-	"google.golang.org/appengine/datastore"
+	"cloud.google.com/go/datastore"
+	"github.com/StalkR/aecache/internal"
 )
 
-// A Datastore represents a cache on top of AppEngine's datastore.
-// It implements Cache and GCable interfaces.
-type Datastore struct{}
-
-// Set sets a key to value with a given expiration.
-func (d Datastore) Set(ctx context.Context, key string, value []byte, expiration time.Duration) error {
-	return set(ctx, d, key, value, expiration)
+// A datastoreCache represents a cache on top of Cloud Datastore.
+// It implements Cache interfaces.
+type datastoreCache struct {
+	projectID string
+	m         sync.Mutex // protects below
+	connected bool
+	client    *datastore.Client
 }
 
-// Get gets a value given a key.
-func (d Datastore) Get(ctx context.Context, key string) ([]byte, error) {
-	return get(ctx, d, key)
+// newDatastoreCache creates a new datastoreCache.
+func newDatastoreCache(projectID string) *datastoreCache {
+	return &datastoreCache{
+		projectID: projectID,
+	}
 }
 
-// SetItem sets a key to item.
-func (d Datastore) SetItem(ctx context.Context, key string, item Item) error {
-	// Datastore can save up to 1MB of []byte in an entity.
-	if len(item.Value) >= 1<<20 {
+// connect connects a client to the datastore.
+func (a *datastoreCache) connect(ctx context.Context) error {
+	a.m.Lock()
+	defer a.m.Unlock()
+	if a.connected {
+		return nil
+	}
+	client, err := datastore.NewClient(ctx, a.projectID)
+	if err != nil {
+		return err
+	}
+	a.client = client
+	a.connected = true
+	return nil
+}
+
+// Set sets a key to a value with an expiration.
+func (a *datastoreCache) Set(ctx context.Context, key string, value []byte, expiration time.Duration) error {
+	if expiration <= 0 {
+		return nil
+	}
+	// Per https://godoc.org/cloud.google.com/go/datastore
+	// - []byte (up to 1 megabyte in length)
+	if len(value) >= 1<<20 {
 		return ErrTooBig
 	}
-	k := datastore.NewKey(ctx, "Item", "Cache:"+key, 0, nil)
-	_, err := datastore.Put(ctx, k, &item)
-	return err
+	a.connect(ctx)
+	k := datastore.NameKey("CacheItem", key, nil)
+	item := internal.CacheItem{
+		Value:   value,
+		Expires: time.Now().Add(expiration),
+	}
+	if _, err := a.client.Put(ctx, k, &item); err != nil {
+		return err
+	}
+	return nil
 }
 
-// GetItem gets an item given a key.
-func (d Datastore) GetItem(ctx context.Context, key string) (Item, error) {
-	k := datastore.NewKey(ctx, "Item", "Cache:"+key, 0, nil)
-	item := Item{}
-	err := datastore.Get(ctx, k, &item)
+// Get gets the value and expiration for a key.
+func (a *datastoreCache) Get(ctx context.Context, key string) ([]byte, time.Time, error) {
+	a.connect(ctx)
+	k := datastore.NameKey("CacheItem", key, nil)
+	item := internal.CacheItem{}
+	err := a.client.Get(ctx, k, &item)
 	if err == datastore.ErrNoSuchEntity {
-		return item, ErrCacheMiss
+		return nil, time.Time{}, ErrCacheMiss
 	}
 	if err != nil {
-		return item, err
+		return nil, time.Time{}, err
 	}
-	if !item.Expires.IsZero() && item.Expires.Before(time.Now()) {
-		return item, ErrCacheMiss
+	if item.Expires.Before(time.Now()) {
+		if err := a.client.Delete(ctx, k); err != nil {
+			return nil, time.Time{}, err
+		}
+		return nil, time.Time{}, ErrCacheMiss
 	}
-	return item, nil
+	return item.Value, item.Expires, nil
 }
 
-// Delete deletes an item from the cache by key.
-func (d Datastore) Delete(ctx context.Context, key string) error {
-	k := datastore.NewKey(ctx, "Item", "Cache:"+key, 0, nil)
-	return datastore.Delete(ctx, k)
-}
-
-// Flush removes all cache items from the datastore.
-func (d Datastore) Flush(ctx context.Context) error {
-	keys, err := datastore.NewQuery("Item").KeysOnly().GetAll(ctx, nil)
-	if err != nil {
-		return err
-	}
-	return d.batchDelete(ctx, keys)
-}
-
-// GC deletes expired cache items from the datastore.
-func (d Datastore) GC(ctx context.Context) error {
-	q := datastore.NewQuery("Item").Filter("Expires >", time.Time{})
-	keys, err := q.Filter("Expires <", time.Now()).KeysOnly().GetAll(ctx, nil)
+// Clean deletes expired items.
+func (a *datastoreCache) Clean(ctx context.Context) error {
+	a.connect(ctx)
+	q := datastore.NewQuery("CacheItem").Filter("Expires <", time.Now()).KeysOnly()
+	keys, err := a.client.GetAll(ctx, q, nil)
 	if err != nil {
 		return err
 	}
-	return d.batchDelete(ctx, keys)
-}
-
-func (d Datastore) batchDelete(ctx context.Context, keys []*datastore.Key) error {
-	// According to error "cannot write more than 500 entities in a single call".
+	// Batch deletes, per error "cannot write more than 500 entities in a single call".
 	const batchSize = 500
 	for len(keys) > 0 {
 		n := batchSize
 		if n > len(keys) {
 			n = len(keys)
 		}
-		if err := datastore.DeleteMulti(ctx, keys[:n]); err != nil {
+		if err := a.client.DeleteMulti(ctx, keys[:n]); err != nil {
 			return err
 		}
 		keys = keys[n:]
