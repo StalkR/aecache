@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"google.golang.org/appengine/datastore"
+	"cloud.google.com/go/datastore"
 )
 
 // A Datastore represents a cache on top of AppEngine's datastore.
@@ -27,17 +27,24 @@ func (d Datastore) SetItem(ctx context.Context, key string, item Item) error {
 	if len(item.Value) >= 1<<20 {
 		return ErrTooBig
 	}
-	k := datastore.NewKey(ctx, "Item", "Cache:"+key, 0, nil)
-	_, err := datastore.Put(ctx, k, &item)
+	client, err := datastore.NewClient(ctx, "")
+	if err != nil {
+		return err
+	}
+	k := datastore.NameKey("Item", "Cache:"+key, nil)
+	_, err = client.Put(ctx, k, &item)
 	return err
 }
 
 // GetItem gets an item given a key.
 func (d Datastore) GetItem(ctx context.Context, key string) (Item, error) {
-	k := datastore.NewKey(ctx, "Item", "Cache:"+key, 0, nil)
 	item := Item{}
-	err := datastore.Get(ctx, k, &item)
-	if err == datastore.ErrNoSuchEntity {
+	client, err := datastore.NewClient(ctx, "")
+	if err != nil {
+		return item, err
+	}
+	k := datastore.NameKey("Item", "Cache:"+key, nil)
+	if err := client.Get(ctx, k, &item); err == datastore.ErrNoSuchEntity {
 		return item, ErrCacheMiss
 	}
 	if err != nil {
@@ -51,33 +58,51 @@ func (d Datastore) GetItem(ctx context.Context, key string) (Item, error) {
 
 // Delete deletes an item from the cache by key.
 func (d Datastore) Delete(ctx context.Context, key string) error {
-	k := datastore.NewKey(ctx, "Item", "Cache:"+key, 0, nil)
-	return datastore.Delete(ctx, k)
+	client, err := datastore.NewClient(ctx, "")
+	if err != nil {
+		return err
+	}
+	k := datastore.NameKey("Item", "Cache:"+key, nil)
+	return client.Delete(ctx, k)
 }
 
 // Flush removes all cache items from the datastore.
 func (d Datastore) Flush(ctx context.Context) error {
-	keys, err := datastore.NewQuery("Item").KeysOnly().GetAll(ctx, nil)
+	client, err := datastore.NewClient(ctx, "")
 	if err != nil {
 		return err
 	}
-	return datastore.DeleteMulti(ctx, keys)
+	q := datastore.NewQuery("Item").KeysOnly()
+	keys, err := client.GetAll(ctx, q, nil)
+	if err != nil {
+		return err
+	}
+	return d.batchDelete(ctx, client, keys)
 }
 
 // GC deletes expired cache items from the datastore.
 func (d Datastore) GC(ctx context.Context) error {
-	q := datastore.NewQuery("Item").Filter("Expires >", time.Time{})
-	keys, err := q.Filter("Expires <", time.Now()).KeysOnly().GetAll(ctx, nil)
+	client, err := datastore.NewClient(ctx, "")
 	if err != nil {
 		return err
 	}
+	q := datastore.NewQuery("Item").Filter("Expires >", time.Time{}).Filter("Expires <", time.Now()).KeysOnly()
+	keys, err := client.GetAll(ctx, q, nil)
+	if err != nil {
+		return err
+	}
+	return d.batchDelete(ctx, client, keys)
+}
+
+func (d Datastore) batchDelete(ctx context.Context, client *datastore.Client, keys []*datastore.Key) error {
+	// According to error "cannot write more than 500 entities in a single call".
+	const batchSize = 500
 	for len(keys) > 0 {
-		// "API error 1 (datastore_v3: BAD_REQUEST): cannot write more than 500 entities in a single call"
-		n := 500
+		n := batchSize
 		if n > len(keys) {
 			n = len(keys)
 		}
-		if err := datastore.DeleteMulti(ctx, keys[:n]); err != nil {
+		if err := client.DeleteMulti(ctx, keys[:n]); err != nil {
 			return err
 		}
 		keys = keys[n:]
