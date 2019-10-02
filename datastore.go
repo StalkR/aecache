@@ -61,7 +61,7 @@ func (d Datastore) Flush(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return datastore.DeleteMulti(ctx, keys)
+	return d.batchDelete(ctx, keys)
 }
 
 // GC deletes expired cache items from the datastore.
@@ -71,9 +71,14 @@ func (d Datastore) GC(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	return d.batchDelete(ctx, keys)
+}
+
+func (d Datastore) batchDelete(ctx context.Context, keys []*datastore.Key) error {
+	// According to error "cannot write more than 500 entities in a single call".
+	const batchSize = 500
 	for len(keys) > 0 {
-		// "API error 1 (datastore_v3: BAD_REQUEST): cannot write more than 500 entities in a single call"
-		n := 500
+		n := batchSize
 		if n > len(keys) {
 			n = len(keys)
 		}
