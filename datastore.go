@@ -27,7 +27,7 @@ func (d Datastore) SetItem(ctx context.Context, key string, item Item) error {
 	if len(item.Value) >= 1<<20 {
 		return ErrTooBig
 	}
-	client, err := datastore.NewClient(ctx, "")
+	client, err := datastore.NewClient(ctx, datastore.DetectProjectID)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func (d Datastore) SetItem(ctx context.Context, key string, item Item) error {
 // GetItem gets an item given a key.
 func (d Datastore) GetItem(ctx context.Context, key string) (Item, error) {
 	item := Item{}
-	client, err := datastore.NewClient(ctx, "")
+	client, err := datastore.NewClient(ctx, datastore.DetectProjectID)
 	if err != nil {
 		return item, err
 	}
@@ -58,7 +58,7 @@ func (d Datastore) GetItem(ctx context.Context, key string) (Item, error) {
 
 // Delete deletes an item from the cache by key.
 func (d Datastore) Delete(ctx context.Context, key string) error {
-	client, err := datastore.NewClient(ctx, "")
+	client, err := datastore.NewClient(ctx, datastore.DetectProjectID)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (d Datastore) Delete(ctx context.Context, key string) error {
 
 // Flush removes all cache items from the datastore.
 func (d Datastore) Flush(ctx context.Context) error {
-	client, err := datastore.NewClient(ctx, "")
+	client, err := datastore.NewClient(ctx, datastore.DetectProjectID)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (d Datastore) Flush(ctx context.Context) error {
 
 // GC deletes expired cache items from the datastore.
 func (d Datastore) GC(ctx context.Context) error {
-	client, err := datastore.NewClient(ctx, "")
+	client, err := datastore.NewClient(ctx, datastore.DetectProjectID)
 	if err != nil {
 		return err
 	}
