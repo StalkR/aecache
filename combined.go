@@ -8,11 +8,10 @@ import (
 )
 
 // A combinedCache represents the combination of multiple caches.
-// It implements Cache interface.
-type combinedCache []Cache
+type combinedCache []cacher
 
 // newMemoryCache creates a new combinedCache.
-func newCombinedCache(caches ...Cache) combinedCache {
+func newCombinedCache(caches ...cacher) combinedCache {
 	return combinedCache(caches)
 }
 

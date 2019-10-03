@@ -7,7 +7,6 @@ import (
 )
 
 // A memoryCache represents a cache in the process memory.
-// It implements Cache interfaces.
 type memoryCache struct {
 	m       sync.Mutex // protects below
 	values  map[string][]byte

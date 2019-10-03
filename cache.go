@@ -26,8 +26,8 @@ var (
 	ErrTooBig = errors.New("cache: too big")
 )
 
-// Cache represents the ability to set/get values but also clean.
-type Cache interface {
+// cacher represents the ability to set/get values and clean.
+type cacher interface {
 	// Set sets a key to a value with an expiration.
 	Set(ctx context.Context, key string, value []byte, expiration time.Duration) error
 	// Get gets the value and expiration for a key.
@@ -36,9 +36,20 @@ type Cache interface {
 	Clean(ctx context.Context) error
 }
 
-// New creates a new layered cache (process memory, cloud datastore).
-// ProjectID is necessary for Cloud Datastore, see datastore.NewClient.
-// https://godoc.org/cloud.google.com/go/datastore#NewClient
-func New(projectID string) Cache {
-	return newCombinedCache(newMemoryCache(), newDatastoreCache(projectID))
+// defaultCache is the default layered cache (process memory, cloud datastore).
+var defaultCache = newCombinedCache(newMemoryCache(), newDatastoreCache())
+
+// Set sets a key to a value with an expiration.
+func Set(ctx context.Context, key string, value []byte, expiration time.Duration) error {
+	return defaultCache.Set(ctx, key, value, expiration)
+}
+
+// Get gets the value and expiration for a key.
+func Get(ctx context.Context, key string) ([]byte, time.Time, error) {
+	return defaultCache.Get(ctx, key)
+}
+
+// Clean deletes expired items.
+func Clean(ctx context.Context) error {
+	return defaultCache.Clean(ctx)
 }

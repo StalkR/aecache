@@ -10,29 +10,26 @@ import (
 )
 
 // A datastoreCache represents a cache on top of Cloud Datastore.
-// It implements Cache interfaces.
 type datastoreCache struct {
-	projectID string
 	m         sync.Mutex // protects below
 	connected bool
 	client    *datastore.Client
 }
 
 // newDatastoreCache creates a new datastoreCache.
-func newDatastoreCache(projectID string) *datastoreCache {
-	return &datastoreCache{
-		projectID: projectID,
-	}
+func newDatastoreCache() *datastoreCache {
+	return &datastoreCache{}
 }
 
 // connect connects a client to the datastore.
+// It detects the project ID from credentials.
 func (a *datastoreCache) connect(ctx context.Context) error {
 	a.m.Lock()
 	defer a.m.Unlock()
 	if a.connected {
 		return nil
 	}
-	client, err := datastore.NewClient(ctx, a.projectID)
+	client, err := datastore.NewClient(ctx, datastore.DetectProjectID)
 	if err != nil {
 		return err
 	}
