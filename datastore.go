@@ -51,7 +51,9 @@ func (a *datastoreCache) Set(ctx context.Context, key string, value []byte, expi
 	if len(value) >= 1<<20 {
 		return ErrTooBig
 	}
-	a.connect(ctx)
+	if err := a.connect(ctx); err != nil {
+		return err
+	}
 	k := datastore.NameKey("CacheItem", key, nil)
 	item := internal.CacheItem{
 		Value:   value,
@@ -65,7 +67,9 @@ func (a *datastoreCache) Set(ctx context.Context, key string, value []byte, expi
 
 // Get gets the value and expiration for a key.
 func (a *datastoreCache) Get(ctx context.Context, key string) ([]byte, time.Time, error) {
-	a.connect(ctx)
+	if err := a.connect(ctx); err != nil {
+		return nil, time.Time{}, err
+	}
 	k := datastore.NameKey("CacheItem", key, nil)
 	item := internal.CacheItem{}
 	err := a.client.Get(ctx, k, &item)
@@ -86,7 +90,9 @@ func (a *datastoreCache) Get(ctx context.Context, key string) ([]byte, time.Time
 
 // Clean deletes expired items.
 func (a *datastoreCache) Clean(ctx context.Context) error {
-	a.connect(ctx)
+	if err := a.connect(ctx); err != nil {
+		return err
+	}
 	q := datastore.NewQuery("CacheItem").Filter("Expires <", time.Now()).KeysOnly()
 	keys, err := a.client.GetAll(ctx, q, nil)
 	if err != nil {
