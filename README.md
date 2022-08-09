@@ -4,8 +4,8 @@
 
 Bugs, comments, questions: create a [new issue][5].
 
-[1]: https://api.travis-ci.org/StalkR/aecache.png?branch=master
-[2]: https://travis-ci.org/StalkR/aecache
+[1]: https://github.com/StalkR/aecache/actions/workflows/build.yml/badge.svg
+[2]: https://github.com/StalkR/aecache/actions/workflows/build.yml
 [3]: https://godoc.org/github.com/StalkR/aecache?status.png
 [4]: https://godoc.org/github.com/StalkR/aecache
 [5]: https://github.com/StalkR/aecache/issues/new
